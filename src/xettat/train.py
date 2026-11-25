@@ -93,14 +93,14 @@ def main(argv: list[str] | None = None) -> int:
     step, best, bad_evals, done = 0, -1.0, 0, False
     last = ckpt_dir / "last.pt"
     if last.exists():
-        st = torch.load(last, map_location=device, weights_only=False)
+        st = torch.load(last, map_location="cpu", weights_only=False)  # rng states must stay on CPU
         model.load_state_dict(st["model"])
         opt.load_state_dict(st["optim"])
         sched.load_state_dict(st["sched"])
         step, best, bad_evals, done = st["step"], st["best"], st["bad_evals"], st.get("done", False)
         random.setstate(st["py_rng"])
         np.random.set_state(st["np_rng"])
-        torch.set_rng_state(st["torch_rng"])
+        torch.set_rng_state(st["torch_rng"].cpu())
         logger.log({"event": "resume", "from_step": step})
         print(f"resumed from step {step}")
     if done == "early_stop" or step >= tc["max_steps"]:
