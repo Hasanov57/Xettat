@@ -1,1 +1,26 @@
+# --- secrets: never commit GPU/VPN access files ---
+team14*
+README-team14.md
+*.conf
+.env
+
+# --- data & models (large) ---
+data/raw/
+data/processed/
+checkpoints/
+*.pt
+*.onnx
+*.safetensors
+
+# --- python ---
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.venv/
+
+# --- slurm logs ---
+*.out
+
+# --- tooling scratch ---
 .superpowers/
