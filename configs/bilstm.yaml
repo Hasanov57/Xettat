@@ -1,0 +1,18 @@
+# M1: char-level BiLSTM (from scratch). ~5M params, fits easily in a 20 GB slice.
+seed: 42
+ckpt_root: /data/teams/team14/checkpoints
+runs_root: runs
+model: {type: bilstm, emb_dim: 128, hidden: 256, layers: 3, dropout: 0.2}
+data: {dir: data/processed, max_len: 512, augment: true, val_subset: 5000}
+train:
+  batch_size: 256
+  lr: 0.002
+  weight_decay: 0.01
+  warmup_steps: 1000
+  max_steps: 60000
+  eval_every: 2000
+  ckpt_every: 1000
+  patience: 6
+  grad_clip: 1.0
+  num_workers: 4
+  log_every: 100
