@@ -27,3 +27,11 @@ __pycache__/
 .hf_cache/
 .pipeline_queue
 .pipeline_queue.tmp
+
+# browser bundles (rebuilt by scripts/fetch_ort.py + scripts/pack_extension.py)
+vendor/
+extension/vendor/
+extension/model/
+web/vendor/
+web/model/
+exported/

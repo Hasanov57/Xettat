@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8">
+  <title>Xəttat — Ayarlar</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="wrap options">
+    <header><img src="icons/icon48.png" alt=""><h1>Xəttat — Ayarlar</h1></header>
+    <fieldset>
+      <legend>Model harada işləsin?</legend>
+      <label><input type="radio" name="mode" value="local"> <b>Lokal (tövsiyə olunur)</b> — model brauzerin içində işləyir, mətn kompüterdən çıxmır.</label>
+      <label><input type="radio" name="mode" value="api"> <b>Server</b> — daha dəqiq (böyük) model, mətn aşağıdakı serverə göndərilir.</label>
+      <label>Server ünvanı <input type="url" id="apiUrl" placeholder="http://localhost:8000"></label>
+    </fieldset>
+    <button id="save">Yadda saxla</button><span id="saved" class="saved"></span>
+    <p class="hint">Qısayolu dəyişmək üçün: <code>chrome://extensions/shortcuts</code></p>
+  </div>
+  <script type="module" src="options.js"></script>
+</body>
+</html>
