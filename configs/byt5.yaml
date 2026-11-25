@@ -1,0 +1,18 @@
+# M3: pretrained ByT5-small encoder (~220M params) + per-character head. bf16; ~12-16 GB peak at batch 32.
+seed: 42
+ckpt_root: /data/teams/team14/checkpoints
+runs_root: runs
+model: {type: byt5, name: google/byt5-small, dropout: 0.1, pretrained: true, grad_ckpt: false}
+data: {dir: data/processed, max_len: 512, augment: true, val_subset: 2000}
+train:
+  batch_size: 32
+  lr: 0.0001
+  weight_decay: 0.01
+  warmup_steps: 1000
+  max_steps: 40000
+  eval_every: 2000
+  ckpt_every: 1000
+  patience: 5
+  grad_clip: 1.0
+  num_workers: 4
+  log_every: 100

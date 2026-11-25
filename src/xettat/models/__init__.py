@@ -14,4 +14,8 @@ def build_model(cfg: dict, vocab_size: int) -> nn.Module:
         from xettat.models.char_transformer import CharTransformer
 
         return CharTransformer(vocab_size, **params)
+    if kind == "byt5":
+        from xettat.models.byt5 import ByT5Tagger
+
+        return ByT5Tagger(vocab_size, **params)
     raise ValueError(f"unknown model type {kind!r}")

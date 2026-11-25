@@ -11,7 +11,7 @@ def test_all_configs_have_required_keys():
     assert {f.stem for f in files} >= {"debug", "bilstm", "transformer"}
     for f in files:
         cfg = yaml.safe_load(f.read_text())
-        assert cfg["model"]["type"] in {"bilstm", "transformer"}, f
+        assert cfg["model"]["type"] in {"bilstm", "transformer", "byt5"}, f
         assert {"dir", "max_len"} <= set(cfg["data"]), f
         assert {"batch_size", "lr", "max_steps", "eval_every", "ckpt_every"} <= set(cfg["train"]), f
         assert "seed" in cfg, f

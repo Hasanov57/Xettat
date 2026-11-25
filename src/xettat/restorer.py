@@ -20,7 +20,11 @@ class Restorer:
         st = torch.load(path, map_location=device, weights_only=False)
         cfg = st["cfg"]
         vocab = CharVocab.from_json(st["vocab"])
-        model = build_model(cfg["model"], vocab.size)
+        mcfg = dict(cfg["model"])
+        if mcfg["type"] == "byt5":
+            mcfg["pretrained"] = False  # weights come from the checkpoint; only the config is fetched
+            mcfg.pop("grad_ckpt", None)
+        model = build_model(mcfg, vocab.size)
         model.load_state_dict(st["model"])
         model.to(device)
         max_len = min(cfg["data"]["max_len"], cfg["model"].get("max_len", 10**9))
