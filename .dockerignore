@@ -1,0 +1,14 @@
+.git
+data
+checkpoints
+exported
+vendor
+runs
+logs
+web
+extension
+report
+presentation
+**/__pycache__
+team14*
+*.conf
