@@ -10,6 +10,7 @@ export async function createRestorer({ ort, baseUrl = "model/", modelFile = "mod
     fetch(baseUrl + "meta.json").then((r) => r.json()),
   ]);
   const vocab = makeVocab(vocabChars);
+  batchSize = meta.batch_size ?? batchSize; // BiLSTM exports run unpadded, one line per call
   const session = await ort.InferenceSession.create(baseUrl + (meta.default_file ?? modelFile), {
     executionProviders: ["wasm"],
     graphOptimizationLevel: "all",
