@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Xəttat: ingilis klaviaturası ilə yazılan mətni düzgün Azərbaycan yazısına çevirir</title>
+  <meta name="description" content="seher → səhər. Xəttat kontekstə baxaraq ə, ı, ö, ü, ç, ş, ğ hərflərini bərpa edir. Chrome extension və canlı demo.">
+  <link rel="icon" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700&family=Unbounded:wght@500;800&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="#"><img src="favicon.png" alt="" width="32" height="32">Xəttat</a>
+    <nav><a href="#nece">Necə işləyir</a><a href="#qurasdir">Quraşdır</a><a href="https://github.com/Hasanov57/Xettat">GitHub</a></nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1 class="word" aria-label="seher, səhər">
+        <span class="plain">seher</span>
+        <span class="ink">s<b>ə</b>h<b>ə</b>r</span>
+      </h1>
+      <p class="lead">İngilis klaviaturası ilə yazın, Xəttat hərfləri yerinə qoysun. Model cümlənin kontekstinə baxır: <em>seher</em> həm <em>səhər</em>, həm <em>şəhər</em> ola bilər, düzgününü cümlənin qalan hissəsi deyir.</p>
+
+      <div class="demo">
+        <label class="pane">
+          <span class="pane-title">Sizin yazdığınız</span>
+          <textarea id="input" spellcheck="false" rows="5">uzumun suyu uzume sicradi. sabah seher saat 9-da seherin merkezinde gorusek?</textarea>
+        </label>
+        <div class="pane">
+          <span class="pane-title">Xəttat <button id="copy" class="link" type="button">Kopyala</button></span>
+          <output id="output" aria-live="polite"></output>
+        </div>
+        <div class="demo-bar">
+          <button id="restore" type="button" disabled>Düzəlt</button>
+          <span id="status" role="status">Model yüklənir…</span>
+        </div>
+        <div class="examples">
+          <span>Sınayın:</span>
+          <button type="button" data-example="qardas necesen, isler nece gedir?">qardas necesen</button>
+          <button type="button" data-example="Ilham bu gun Istanbula ucur, gelende cicek getirecek.">Ilham Istanbula ucur</button>
+          <button type="button" data-example="Bu seherde her seher cay icirik.">her seher</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="nece" class="how">
+      <h2>Necə işləyir</h2>
+      <ol class="steps">
+        <li><h3>Siz adi qaydada yazırsınız</h3><p>Hərfləri axtarmağa ehtiyac yoxdur: <em>e, i, o, u, c, s, g</em> ilə yazın.</p></li>
+        <li><h3>Model hər hərfə qərar verir</h3><p>Hər namizəd hərf üçün soruşur: olduğu kimi qalsın, yoxsa <em>ə, ı, ö, ü, ç, ş, ğ</em> olsun? Cavabı ətrafdakı sözlərə görə verir.</p></li>
+        <li><h3>Yalnız o hərflər dəyişir</h3><p>Rəqəmlərə, linklərə, ingiliscə sözlərə və artıq düzgün yazdığınız hərflərə toxunulmur. Mətnin uzunluğu eyni qalır.</p></li>
+      </ol>
+      <p class="note">Model Azərbaycan Vikipediyasının milyonlarla cümləsi üzərində öyrədilib. Hərflər avtomatik silinib, model onları geri qaytarmağı öyrənib. Extension-da model brauzerin içində işləyir, mətniniz heç yerə göndərilmir.</p>
+    </section>
+
+    <section id="qurasdir" class="install">
+      <h2>Chrome-a quraşdırın</h2>
+      <ol class="steps compact">
+        <li>GitHub-dan repo-nu yükləyin və <code>extension</code> qovluğunu hazırlayın (təlimat <a href="https://github.com/Hasanov57/Xettat/tree/main/extension">extension/README.md</a>-dədir).</li>
+        <li>Chrome-da <code>chrome://extensions</code> açın, <b>Developer mode</b>-u yandırın.</li>
+        <li><b>Load unpacked</b> basıb <code>extension</code> qovluğunu seçin.</li>
+        <li>İstənilən saytda mətn sahəsində <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> basın.</li>
+      </ol>
+    </section>
+  </main>
+
+  <footer>
+    <p>Xəttat, Deep Learning final layihəsi (DLE-AI-202, Cohort II 2026), Team 14.</p>
+    <p><a href="https://github.com/Hasanov57/Xettat">Mənbə kodu GitHub-da</a></p>
+  </footer>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
