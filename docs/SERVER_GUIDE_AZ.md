@@ -8,6 +8,29 @@ Bu təlimatda Xəttatı AI Academy-nin GPU serverində necə qurub train edəcə
 
 ---
 
+## ⭐ Ən asan yol: hər şeyi bir əmrlə gecəyə buraxmaq
+
+```bash
+cd ~/Xettat && git pull
+bash slurm/pipeline.sh
+```
+
+Bu əmr bütün mərhələləri ardıcıl işə salır: data → BiLSTM train → qiymətləndirmə → Transformer train → qiymətləndirmə.
+Hər mərhələ bitəndə növbətini özü növbəyə qoyur. Bundan sonra VPN-i söndürə və kompüteri bağlaya bilərsiniz.
+
+Səhər vəziyyəti belə yoxlayın:
+
+```bash
+squeue --me              # hazırda nə işləyir
+cat .pipeline_queue      # hələ qalan mərhələlər (boşdursa, hamısı bitib)
+ls -t logs | head        # son log faylları
+```
+
+Bir mərhələ xəta ilə bitsə, zəncir orada dayanır. Ən son log faylını Claude-a göndərin.
+Data artıq hazırdırsa, `bash slurm/pipeline.sh --skip-data` yazın.
+
+---
+
 ## 0. Hər dəfə: serverə qoşulmaq
 
 1. Kompüterdə **WireGuard** proqramını açın, `team14` tunelini seçib **Activate** basın.

@@ -25,3 +25,5 @@ __pycache__/
 # --- tooling scratch ---
 .superpowers/
 .hf_cache/
+.pipeline_queue
+.pipeline_queue.tmp

@@ -11,3 +11,4 @@ SPLIT=${2:-val}
 cd "$SLURM_SUBMIT_DIR"
 CKPT_ROOT=${XETTAT_CKPT_ROOT:-/data/teams/team14/checkpoints}
 python -m xettat.evaluate --ckpt "$CKPT_ROOT/$RUN_ID/best.pt" --data data/processed --split "$SPLIT" --out "runs/$RUN_ID"
+bash slurm/next_stage.sh

@@ -11,3 +11,4 @@ cd "$SLURM_SUBMIT_DIR"
 export HF_HOME="${HF_HOME:-$PWD/.hf_cache}"
 python -m xettat.data.prepare --source wiki --out data/processed --seed 42
 python -m xettat.run_baselines --data data/processed --split val --out runs/baselines
+bash slurm/next_stage.sh

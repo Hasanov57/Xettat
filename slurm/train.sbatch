@@ -18,4 +18,5 @@ if [ "$code" -eq 99 ]; then
   sbatch slurm/train.sbatch "$CONFIG" "$RUN_ID"
   exit 0
 fi
+if [ "$code" -eq 0 ]; then bash slurm/next_stage.sh; fi
 exit "$code"
