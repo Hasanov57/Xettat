@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class CharTransformer(nn.Module):
@@ -28,5 +29,22 @@ class CharTransformer(nn.Module):
             raise ValueError(f"sequence length {T} > max_len {self.max_len}")
         pos = torch.arange(T, device=ids.device).unsqueeze(0)
         x = self.emb(ids) + self.pos(pos)
-        x = self.encoder(x, src_key_padding_mask=~mask)
+        if torch.onnx.is_in_onnx_export():
+            x = self._export_encoder(x, mask)
+        else:
+            x = self.encoder(x, src_key_padding_mask=~mask)
         return self.head(self.norm(x)).squeeze(-1)
+
+    def _export_encoder(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        """Same math as the pre-norm nn.TransformerEncoderLayer stack (same parameters), written so the
+        ONNX tracer keeps batch and sequence length dynamic (nn.MultiheadAttention bakes them in)."""
+        attn_mask = mask[:, None, None, :]  # [B,1,1,T], True = attend
+        for layer in self.encoder.layers:
+            sa = layer.self_attn
+            h = layer.norm1(x)
+            q, k, v = F.linear(h, sa.in_proj_weight, sa.in_proj_bias).chunk(3, dim=-1)
+            q, k, v = (t.unflatten(-1, (sa.num_heads, sa.head_dim)).transpose(1, 2) for t in (q, k, v))
+            o = F.scaled_dot_product_attention(q, k, v, attn_mask=attn_mask)
+            x = x + sa.out_proj(o.transpose(1, 2).flatten(2))
+            x = x + layer.linear2(layer.activation(layer.linear1(layer.norm2(x))))
+        return x

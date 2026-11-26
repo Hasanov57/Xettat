@@ -23,7 +23,8 @@ class CharBiLSTM(nn.Module):
         if torch.onnx.is_in_onnx_export():
             # packed sequences don't export cleanly; the browser runs BiLSTM one line at a time (no padding)
             out, _ = self.lstm(x)
-            return self.head(self.drop(out)).squeeze(-1)
+            logits = self.head(self.drop(out)).squeeze(-1)
+            return logits.masked_fill(~mask, -1e4)  # uses `mask`, so ONNX keeps it as a graph input
         lengths = mask.sum(1).clamp(min=1).cpu()
         packed = pack_padded_sequence(x, lengths, batch_first=True, enforce_sorted=False)
         out, _ = self.lstm(packed)

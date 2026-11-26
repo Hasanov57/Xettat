@@ -38,3 +38,19 @@ def test_export_matches_torch(tmp_path, kind):
     sess = ort.InferenceSession(str(out / "model.onnx"))
     got = sess.run(["logits"], {"ids": ids.numpy(), "mask": mask.numpy()})[0]
     np.testing.assert_allclose(got, ref, atol=1e-4)
+
+
+def test_transformer_export_path_equals_module_path():
+    """The hand-written export encoder must match nn.TransformerEncoder exactly (padding included)."""
+    from unittest import mock
+
+    v = CharVocab()
+    m = build_model(CFGS["transformer"], v.size).eval()
+    ids = torch.randint(2, 60, (3, 23))
+    mask = torch.ones(3, 23, dtype=torch.bool)
+    mask[1, 15:] = False
+    with torch.no_grad():
+        ref = m(ids, mask)
+        with mock.patch("torch.onnx.is_in_onnx_export", return_value=True):
+            got = m(ids, mask)
+    torch.testing.assert_close(got[mask], ref[mask], atol=1e-5, rtol=1e-4)
