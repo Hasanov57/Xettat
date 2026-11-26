@@ -21,10 +21,10 @@ from xettat.data.clean import az_ratio, detokenize, is_good_sentence, split_sent
 LICENSES = {
     "wiki": "CC BY-SA 4.0 (Wikimedia, wikimedia/wikipedia 20231101.az)",
     "hplt": "CC0-1.0 (HPLT/HPLT2.0_cleaned, azj_Latn)",
-    "opensubs": "OPUS OpenSubtitles v2018 (opensubtitles.org; research use, cite Lison & Tiedemann 2016)",
+    "opensubs": "OPUS OpenSubtitles v2024 (opensubtitles.org; research use, cite Lison & Tiedemann 2016)",
 }
 HPLT_SHARD = "hf://datasets/HPLT/HPLT2.0_cleaned/azj_Latn/train-{:05d}-of-00054.parquet"
-OPUS_SUBS = "https://object.pouta.csc.fi/OPUS-OpenSubtitles/v2018/mono/az.txt.gz"
+OPUS_SUBS = "https://object.pouta.csc.fi/OPUS-OpenSubtitles/v2024/mono/az.txt.gz"  # verified 200 on 2026-11-27
 SUBS_CHUNK = 200  # subtitle lines per pseudo-document (split + doc-level filter unit)
 
 
