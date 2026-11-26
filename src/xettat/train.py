@@ -47,10 +47,10 @@ def lr_lambda(warmup: int, total: int, floor: float = 0.05):
     return f
 
 
-def evaluate_val(model, vocab, targets, device, max_len) -> dict:
+def evaluate_val(model, vocab, targets, device, max_len, batch_size: int = 128) -> dict:
     model.eval()
     inputs = [strip(t) for t in targets]
-    preds = predict_texts(model, vocab, inputs, device, max_len)
+    preds = predict_texts(model, vocab, inputs, device, max_len, batch_size=batch_size)
     model.train()
     m = score(inputs, preds, targets)
     return {f"val_{k}": v for k, v in m.items() if isinstance(v, float)}
@@ -157,7 +157,7 @@ def main(argv: list[str] | None = None) -> int:
 
             finished = step >= tc["max_steps"]
             if step % tc["eval_every"] == 0 or finished:
-                m = evaluate_val(model, vocab, val_targets, device, max_len)
+                m = evaluate_val(model, vocab, val_targets, device, max_len, dc.get("eval_batch_size", 128))
                 if m["val_word_acc"] > best:
                     best, bad_evals = m["val_word_acc"], 0
                     save(ckpt_dir / "best.pt", model=model.state_dict(), cfg=cfg, vocab=vocab.to_json(),

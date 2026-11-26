@@ -1,9 +1,10 @@
-# M3: pretrained ByT5-small encoder (~220M params) + per-character head. bf16; ~12-16 GB peak at batch 32.
+# M3: pretrained ByT5-small encoder (~218M params) + per-character head. bf16.
+# Batch 32 without gradient checkpointing ran out of memory on a 20 GB slice (job log 2026-11-26) -> grad_ckpt on.
 seed: 42
 ckpt_root: /data/teams/team14/checkpoints
 runs_root: runs
-model: {type: byt5, name: google/byt5-small, dropout: 0.1, pretrained: true, grad_ckpt: false}
-data: {dir: data/processed, max_len: 512, augment: true, val_subset: 2000}
+model: {type: byt5, name: google/byt5-small, dropout: 0.1, pretrained: true, grad_ckpt: true}
+data: {dir: data/processed, max_len: 512, augment: true, val_subset: 2000, eval_batch_size: 32}
 train:
   batch_size: 32
   lr: 0.0001

@@ -11,6 +11,7 @@ set -uo pipefail
 CONFIG=${1:?usage: sbatch slurm/train.sbatch CONFIG RUN_ID}
 RUN_ID=${2:?usage: sbatch slurm/train.sbatch CONFIG RUN_ID}
 cd "$SLURM_SUBMIT_DIR"
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 python -m xettat.train --config "$CONFIG" --run-id "$RUN_ID" --time-budget-min 465
 code=$?
 if [ "$code" -eq 99 ]; then
