@@ -36,6 +36,7 @@ def main(argv: list[str] | None = None) -> dict:
     ap.add_argument("--out", required=True)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--latency-n", type=int, default=200)
+    ap.add_argument("--tag", default="", help="suffix for output files, e.g. the data domain (hplt, subs)")
     args = ap.parse_args(argv)
 
     data, out = Path(args.data), Path(args.out)
@@ -61,9 +62,11 @@ def main(argv: list[str] | None = None) -> dict:
     m["ckpt_mb"] = os.path.getsize(args.ckpt) / 1e6
     m["ckpt"] = args.ckpt
     m["split"] = args.split
-    (out / f"final_{args.split}.json").write_text(json.dumps(m, ensure_ascii=False, indent=2))
+    suffix = f"{args.split}_{args.tag}" if args.tag else args.split
+    m["tag"] = args.tag
+    (out / f"final_{suffix}.json").write_text(json.dumps(m, ensure_ascii=False, indent=2))
     errors = [{"input": i, "pred": p, "target": t} for i, p, t in zip(inputs, preds, targets) if p != t][:500]
-    (out / f"errors_{args.split}.jsonl").write_text("\n".join(json.dumps(e, ensure_ascii=False) for e in errors))
+    (out / f"errors_{suffix}.jsonl").write_text("\n".join(json.dumps(e, ensure_ascii=False) for e in errors))
     print(json.dumps({k: v for k, v in m.items() if not isinstance(v, dict)}, ensure_ascii=False))
     return m
 

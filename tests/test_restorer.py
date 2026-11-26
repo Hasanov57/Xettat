@@ -57,3 +57,11 @@ def test_evaluate_cli(tiny_ckpt, data_dir, tmp_path):
     main(["--ckpt", str(tiny_ckpt), "--data", str(data_dir), "--split", "val", "--out", str(out)])
     r = json.loads((out / "final_val.json").read_text())
     assert "word_acc" in r and "latency_ms_per_sentence_cpu" in r and "params" in r
+
+
+def test_evaluate_tag(tiny_ckpt, data_dir, tmp_path):
+    from xettat.evaluate import main
+
+    out = tmp_path / "run"
+    main(["--ckpt", str(tiny_ckpt), "--data", str(data_dir), "--split", "val", "--out", str(out), "--tag", "hplt"])
+    assert (out / "final_val_hplt.json").exists() and (out / "errors_val_hplt.jsonl").exists()
