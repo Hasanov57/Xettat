@@ -106,5 +106,15 @@
     toast("Xəttat: mətn düzəldildi ✓  (geri qaytarmaq: Ctrl+Z)");
   }
 
+  // With allFrames injection every frame runs this file: only the frame that holds the caret acts.
+  // The return value tells background.js whether some frame handled the request.
+  const forced = window.__xettatForce === true;
+  window.__xettatForce = false;
+  if (!forced) {
+    if (!document.hasFocus()) return "skip";
+    const active = deepActiveElement();
+    if (active && (active.tagName === "IFRAME" || active.tagName === "FRAME")) return "skip"; // child frame acts
+  }
   run().catch((e) => toast(String(e?.message ?? e), true));
+  return "handled";
 })();

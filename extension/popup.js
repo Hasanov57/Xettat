@@ -28,4 +28,18 @@ $("text").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("fix").click();
 });
 
+async function takePending() {
+  const { pendingText, pendingNote } = await chrome.storage.session.get(["pendingText", "pendingNote"]);
+  if (pendingText === undefined && !pendingNote) return;
+  await chrome.storage.session.remove(["pendingText", "pendingNote"]);
+  await chrome.action.setBadgeText({ text: "" });
+  if (pendingNote) $("note").textContent = pendingNote;
+  $("note").hidden = !pendingNote;
+  if (pendingText) {
+    $("text").value = pendingText;
+    $("fix").click();
+  }
+}
+
 refreshStatus();
+takePending();

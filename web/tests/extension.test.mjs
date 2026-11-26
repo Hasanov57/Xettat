@@ -11,7 +11,8 @@ test("manifest v3 with minimal permissions", () => {
   assert.deepEqual([...manifest.permissions].sort(), ["activeTab", "contextMenus", "offscreen", "scripting", "storage"]);
   assert.ok(!manifest.host_permissions, "no always-on host permissions");
   assert.match(manifest.content_security_policy.extension_pages, /'wasm-unsafe-eval'/);
-  assert.equal(manifest.commands["restore-text"].suggested_key.default, "Alt+Shift+X");
+  // Alt+Shift is the Windows keyboard-layout switch, so Chrome left that shortcut unassigned for users
+  assert.equal(manifest.commands["restore-text"].suggested_key.default, "Ctrl+Shift+Space");
 });
 
 test("every file referenced by manifest exists", () => {
@@ -43,4 +44,19 @@ test("no inline scripts (MV3 CSP)", () => {
     assert.doesNotMatch(html, /<script(?![^>]*src=)[^>]*>/, page);
     assert.doesNotMatch(html, /\son[a-z]+="/, page);
   }
+});
+
+test("background falls back to the popup when injection fails", () => {
+  const bg = readFileSync(join(EXT, "background.js"), "utf8");
+  assert.match(bg, /allFrames:\s*true/);
+  assert.match(bg, /chrome\.action\.openPopup/);
+  assert.match(bg, /storage\.session/);
+  const popup = readFileSync(join(EXT, "popup.js"), "utf8");
+  assert.match(popup, /pendingText/);
+});
+
+test("content script stays quiet in frames that do not hold focus", () => {
+  const cs = readFileSync(join(EXT, "content.js"), "utf8");
+  assert.match(cs, /document\.hasFocus\(\)/);
+  assert.match(cs, /IFRAME/);
 });

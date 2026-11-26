@@ -66,15 +66,34 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return false;
 });
 
-async function runInTab(tab, frameId) {
-  if (!tab?.id) return;
+// Opens the popup with the text already restored — used when the page can't be edited in place
+// (cross-origin editor iframes, chrome:// pages, the Web Store, ...).
+async function fallbackToPopup(text, note) {
+  await chrome.storage.session.set({ pendingText: text ?? "", pendingNote: note });
   try {
-    await chrome.scripting.executeScript({
-      target: frameId != null ? { tabId: tab.id, frameIds: [frameId] } : { tabId: tab.id },
-      files: ["content.js"],
-    });
+    await chrome.action.openPopup();
+  } catch {
+    await chrome.action.setBadgeText({ text: "!" });
+    await chrome.action.setBadgeBackgroundColor({ color: "#b42318" });
+  }
+}
+
+async function runInTab(tab, { frameId = null, selectionText = "" } = {}) {
+  if (!tab?.id) return;
+  const fromMenu = frameId != null;
+  const target = fromMenu ? { tabId: tab.id, frameIds: [frameId] } : { tabId: tab.id, allFrames: true };
+  try {
+    if (fromMenu) {
+      // the right-clicked frame acts even if the native context menu took focus away from it
+      await chrome.scripting.executeScript({ target, func: () => { window.__xettatForce = true; } });
+    }
+    const results = await chrome.scripting.executeScript({ target, files: ["content.js"] });
+    if (results.some((r) => r.result === "handled")) return;
+    await fallbackToPopup(selectionText, "Mətn sahəsi tapılmadı. Mətni bura yapışdırın və ya seçib yenidən sınayın.");
   } catch (e) {
-    console.warn("Xəttat: bu səhifədə işləmək mümkün deyil", e); // chrome:// pages, Web Store, etc.
+    console.warn("Xəttat: bu səhifəyə daxil olmaq mümkün olmadı", e);
+    await fallbackToPopup(selectionText,
+      "Bu saytda mətni yerində dəyişmək mümkün olmadı. Düzəldilmiş mətni buradan kopyalayın.");
   }
 }
 
@@ -85,5 +104,5 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === MENU_ID) runInTab(tab, info.frameId);
+  if (info.menuItemId === MENU_ID) runInTab(tab, { frameId: info.frameId ?? 0, selectionText: info.selectionText });
 });

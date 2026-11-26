@@ -5,7 +5,7 @@ Model **brauzerin içində** işləyir (onnxruntime-web, WebAssembly): mətn kom
 
 ## İstifadə
 
-- Mətn sahəsinə klikləyin → **Alt + Shift + X**. Mətnin bir hissəsi seçilibsə, yalnız o hissə düzəlir.
+- Mətn sahəsinə klikləyin → **Ctrl + Shift + Space**. (Qısayolu `chrome://extensions/shortcuts` səhifəsində dəyişmək olar.) Mətnin bir hissəsi seçilibsə, yalnız o hissə düzəlir.
 - Və ya sağ klik → **Xəttat ilə düzəlt**.
 - Və ya brauzerin yuxarı panelindəki Xəttat ikonuna basın → mətni yapışdırın → **Düzəlt**.
 - Geri qaytarmaq: **Ctrl + Z**.
@@ -37,4 +37,4 @@ API-ni işə salmaq üçün kök qovluqdakı `README.md`-yə baxın.
 ## Məhdudiyyətlər
 
 - `chrome://` səhifələrində və Chrome Web Store-da extension-lar işləyə bilmir.
-- Google Docs kimi öz redaktoru olan saytlarda qısayol işləməyə bilər. Bu halda popup-dan istifadə edin.
+- Mətni yerində dəyişmək mümkün olmayan saytlarda (məs. Google Docs, başqa domendən gələn redaktor çərçivələri) Xəttat popup-ı açır və düzəldilmiş mətni orada göstərir.
