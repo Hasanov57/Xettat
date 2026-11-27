@@ -42,10 +42,26 @@ Findings:
 | Model | std | digraph (sh/ch/gh) | a (ə→a) | mixed | english (word / en-corruption) |
 |---|---|---|---|---|---|
 | `bilstm_mix` (v1) | 98.67 / 88.7 | 81.61 / 20.5 | 58.52 / 7.0 | 78.44 / 19.3 | 97.78 / **8.8% English words corrupted** |
-| `bilstm_v2` | _pending_ | _pending_ | _pending_ | _pending_ | _pending_ |
+| `bilstm_v2` (3-class, a_bias 0) | 98.54 / 87.4 | **98.83 / 89.7** | **97.92 / 82.6** | **98.39 / 86.0** | 98.69 / **0.03%** |
 
-`bilstm_v2` train-time val (mixed styles, 6 000 sent.): step 2 000 → 96.63; step 4 000 → 97.39 word acc,
-a_false_conversion 0.47%, English corruption 0.0%.
+`bilstm_v2` train-time val (mixed styles, 6 000 sent.): step 2k → 96.63; 4k → 97.39; 24k → 98.17; 100k → 98.76
+(best 98.78 @ 96k). a_false_conversion 0.47% → 0.14%. English corruption 0.0%. HPLT val: 98.89 / 89.95 (mix v1: 99.00).
+
+Findings:
+- v2 costs −0.13 pt on standard style, gains +17 (digraph), +39 (a-style), +20 (mixed); English corruption 8.8% → 0.03%.
+- Digraph style is *easier* than standard (98.83 vs 98.54): writing `sh` disambiguates ş, less guessing.
+- `İshaq` (genuine s+h) kept, `sheher`→`şəhər`, `adad`→`ədəd` while `ata və ana` untouched (examples).
+
+a_bias sweep (int8 ONNX, 2 000 sent./style, word acc / a false-conversion):
+
+| a_bias | std | digraph | a | mixed | english |
+|---|---|---|---|---|---|
+| 0.0 | 98.65 / 0.10% | 98.90 / 0.08% | 97.95 / 0.46% | 98.45 / 0.27% | 98.79 / 0.10% |
+| −1.0 | 98.65 / 0.08% | 98.91 / 0.07% | 97.82 / 0.33% | 98.37 / 0.19% | 98.80 / 0.06% |
+| **−1.5 (chosen)** | 98.66 / 0.05% | 98.91 / 0.05% | 97.79 / 0.29% | 98.34 / 0.17% | 98.81 / 0.05% |
+| −3.0 | 98.68 / 0.03% | 98.92 / 0.03% | 97.36 / 0.22% | 98.13 / 0.10% | 98.82 / 0.02% |
+
+Rationale: corrupting correctly typed text is the anti-goal and most users write standard style.
 
 ## Deployment (Track 3)
 
@@ -53,9 +69,11 @@ a_false_conversion 0.47%, English corruption 0.0%.
 |---|---|---|---|---|
 | `bilstm_v1` | 15.85 MB | 4.01 MB | 99.94% | int8 |
 | `bilstm_mix` | 15.85 MB | 4.01 MB | 99.70% (< 99.9% gate) | fp32 |
+| `bilstm_v2` | 15.85 MB | 4.01 MB | 99.95% | **int8 (current extension)** |
 
 onnxruntime-web 1.20.1 WASM ≈ 11.2 MB. Extension runs fully offline (offscreen document).
-TODO: browser latency via scripts/benchmark.py + in-browser timing; Docker API latency.
+ONNX Runtime CPU (int8, 1 thread, Python): **4.6 ms/sentence** for bilstm_v2 (vs 43 ms PyTorch).
+TODO: in-browser timing (wasm) on a real laptop; Docker API latency.
 
 ## Compute log (GPU = 2g.20gb MIG slice)
 
@@ -65,8 +83,9 @@ TODO: browser latency via scripts/benchmark.py + in-browser timing; Docker API l
 | transformer_v1 | 3h09 | 80k steps |
 | byt5_v1 | 7h45 + 2h40 | OOM at batch 32 without grad-ckpt (fixed); auto-resubmitted at time budget, resumed |
 | bilstm_mix | 5h04 | 100k steps (best @ 92k) |
-| bilstm_v2 | running | started 2026-11-27 ~19:10 |
-Total so far ≈ 22 GPU-h of 145.
+| bilstm_v2 | 5h09 | 100k steps (best @ 96k) |
+| variant evals | 2 × ~9 min | |
+Total so far ≈ 27.5 GPU-h of 145.
 
 ## Engineering incidents (honest "what went wrong")
 
@@ -74,6 +93,7 @@ Total so far ≈ 22 GPU-h of 145.
 - ONNX export: BiLSTM dropped unused `mask` input; Transformer MHA baked sequence length → equivalent functional export path + equivalence test.
 - ByT5 OOM on 20 GB → gradient checkpointing (6.5 GB peak).
 - OpenSubtitles v2018 URL 404 → v2024.
+- 3/5000 variant-TSV rows had TABs inside sentences → mis-paired in evaluation (negligible effect); fixed in generator + loader with a regression test.
 - Extension: `Alt+Shift` is the Windows layout switch → shortcut changed to `Ctrl+Shift+Space`; editor iframes → all-frames injection + popup fallback. Open: some online-notepad editor not recognised as editable (copies to clipboard instead).
 
 ## Decisions (with user)

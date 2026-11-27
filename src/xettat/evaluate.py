@@ -14,18 +14,10 @@ from pathlib import Path
 import torch
 
 from xettat.baselines import WordFreq
+from xettat.data.io import load_split
 from xettat.metrics import score
 from xettat.restorer import Restorer
 from xettat.text import strip
-
-
-def load_split(data: Path, split: str, real_path: Path, tsv: str | None = None) -> tuple[list[str], list[str]]:
-    if tsv or split == "real":
-        path = Path(tsv) if tsv else real_path
-        rows = [l.split("\t") for l in path.read_text(encoding="utf-8").splitlines()[1:] if "\t" in l]
-        return [r[0] for r in rows], [r[1] for r in rows]
-    targets = [l for l in (data / f"{split}.txt").read_text(encoding="utf-8").splitlines() if l.strip()]
-    return [strip(t) for t in targets], targets
 
 
 def main(argv: list[str] | None = None) -> dict:

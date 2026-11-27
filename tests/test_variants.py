@@ -18,3 +18,15 @@ def test_variant_eval_sets(data_dir, tmp_path):
     # deterministic
     main(["--data", str(data_dir), "--split", "val", "--out", str(tmp_path / "v2"), "--n", "20", "--seed", "7"])
     assert (tmp_path / "v2" / "val_mixed.tsv").read_text() == (out / "val_mixed.tsv").read_text()
+
+
+def test_tabs_inside_sentences_survive_tsv(tmp_path):
+    from xettat.data.io import load_split
+
+    d = tmp_path / "d"
+    d.mkdir()
+    (d / "val.txt").write_text("Bu\tcümlədə tab var.\nİkinci cümlə burada.\n", encoding="utf-8")
+    main(["--data", str(d), "--split", "val", "--out", str(tmp_path / "v"), "--n", "2", "--seed", "1"])
+    inputs, targets = load_split(d, "val", d / "none.tsv", str(tmp_path / "v" / "val_std.tsv"))
+    assert len(inputs) == 2 and all("\t" not in t for t in targets)
+    assert sorted(targets) == ["Bu cümlədə tab var.", "İkinci cümlə burada."]

@@ -45,7 +45,7 @@ def main(argv: list[str] | None = None) -> None:
         rng = random.Random(f"{args.seed}:{style}")
         rows = ["input\ttarget"]
         for t in sample:
-            inp, _, tgt = make_variant_pair(t, rng, **_KW[style])
+            inp, _, tgt = make_variant_pair(t.replace("\t", " "), rng, **_KW[style])  # TSV-safe
             rows.append(f"{inp}\t{tgt}")
         (out / f"{args.split}_{style}.tsv").write_text("\n".join(rows) + "\n", encoding="utf-8")
         print(style, len(rows) - 1)
