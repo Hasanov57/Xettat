@@ -19,6 +19,14 @@ def _safe(n: float, d: float) -> float:
 
 
 def score(inputs: list[str], preds: list[str], targets: list[str], ambiguous: set[str] | None = None) -> dict:
+    """Metrics over aligned (input, prediction, target) strings.
+
+    Words are paired by position among \\w+ tokens, so v2 inputs whose length differs from the target
+    (sh -> ş) are still scored; character metrics use word pairs of equal length.
+    """
+    from xettat.english import WORDS
+
+    english = {w.lower() for w in WORDS}
     assert len(inputs) == len(preds) == len(targets)
     c_ok = c_tot = 0
     w_ok = w_tot = 0
@@ -26,41 +34,53 @@ def score(inputs: list[str], preds: list[str], targets: list[str], ambiguous: se
     s_ok = 0
     werr = wall = 0
     corr_bad = corr_tot = 0
+    afc_bad = afc_tot = 0
+    en_bad = en_tot = 0
     pair = {p: {"tp": 0, "fp": 0, "fn": 0} for p in PAIRS}
 
     for inp, pred, tgt in zip(inputs, preds, targets):
         inp, pred, tgt = nfc(inp), nfc(pred), nfc(tgt)
-        aligned = len(pred) == len(tgt)
         s_ok += pred == tgt
-        src = strip(tgt)
-        if aligned:
+        if len(inp) == len(tgt) == len(pred):
             for i, (p, t) in enumerate(zip(pred, tgt)):
-                if src[i] in CANDIDATES:
+                if inp[i] in AZ_LETTERS and inp[i] == t:
+                    corr_tot += 1
+                    corr_bad += p != t
+        t_words = list(WORD.finditer(tgt))
+        p_words = WORD.findall(pred)
+        same_count = len(t_words) == len(p_words)
+        for k, m in enumerate(t_words):
+            tw = m.group()
+            pw = p_words[k] if same_count else None
+            wall += 1
+            werr += pw != tw
+            sw = strip(tw)
+            if tw.lower() in english:
+                en_tot += 1
+                en_bad += pw != tw
+            if any(ch in CANDIDATES for ch in sw):  # same definition as v1 results (comparability)
+                w_tot += 1
+                w_ok += pw == tw
+                if ambiguous is not None and az_lower(sw) in ambiguous:
+                    a_tot += 1
+                    a_ok += pw == tw
+            chars_ok = pw is not None and len(pw) == len(tw)
+            for i, t in enumerate(tw):
+                p = pw[i] if chars_ok else None
+                if t in "aA":
+                    afc_tot += 1
+                    afc_bad += p in ("ə", "Ə")
+                if sw[i] in CANDIDATES:
                     c_tot += 1
                     c_ok += p == t
-                    key = _PAIR_OF.get(az_lower(src[i]))
-                    if key:
-                        t_az = t in AZ_LETTERS
-                        p_az = p in AZ_LETTERS
+                    key = _PAIR_OF.get(az_lower(sw[i]))
+                    if key and p is not None:
+                        t_az, p_az = t in AZ_LETTERS, p in AZ_LETTERS
                         pair[key]["tp"] += t_az and p_az
                         pair[key]["fp"] += p_az and not t_az
                         pair[key]["fn"] += t_az and not p_az
-                if i < len(inp) and inp[i] in AZ_LETTERS and inp[i] == t:
-                    corr_tot += 1
-                    corr_bad += p != t
-        else:
-            c_tot += sum(ch in CANDIDATES for ch in src)
-        for m in WORD.finditer(tgt):
-            tw = m.group()
-            pw = pred[m.start():m.end()] if aligned else None
-            wall += 1
-            werr += pw != tw
-            if any(ch in CANDIDATES for ch in strip(tw)):
-                w_tot += 1
-                w_ok += pw == tw
-                if ambiguous is not None and az_lower(strip(tw)) in ambiguous:
-                    a_tot += 1
-                    a_ok += pw == tw
+                    elif key:
+                        pair[key]["fn"] += t in AZ_LETTERS
 
     per_pair = {}
     for k, v in pair.items():
@@ -76,6 +96,8 @@ def score(inputs: list[str], preds: list[str], targets: list[str], ambiguous: se
         "sentence_acc": _safe(s_ok, len(targets)),
         "wer": _safe(werr, wall),
         "corruption_rate": _safe(corr_bad, corr_tot),
+        "a_false_conversion_rate": _safe(afc_bad, afc_tot),
+        "english_corruption_rate": _safe(en_bad, en_tot),
         "per_pair": per_pair,
         "n_sentences": len(targets),
     }
