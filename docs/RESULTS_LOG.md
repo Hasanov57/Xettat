@@ -63,6 +63,13 @@ a_bias sweep (int8 ONNX, 2 000 sent./style, word acc / a false-conversion):
 
 Rationale: corrupting correctly typed text is the anti-goal and most users write standard style.
 
+### Qualitative probes (bilstm_v2, a_bias −1.5)
+
+- Tongue twister "getdim gördüm bir dərədə iki bərbər…": `bereldir/bereldirsen/bereltmisdi/bereldirem` → all correct
+  (`bərəldir…`); rare reduplication `ber-ber` restored inconsistently in one text (`bər-bər` ×2, `ber-ber` ×1,
+  `ber-bər` ×1) → weakness on rare/folk vocabulary (candidate fix: add aze-books literature corpus).
+  User-typed `berildir` (i for ə) is a spelling error → out of scope by design.
+
 ## Deployment (Track 3)
 
 | Model | ONNX fp32 | ONNX int8 | int8 decision agreement | Used in extension |
