@@ -1,0 +1,121 @@
+{
+ "protected": [
+  {
+   "text": "bax https://x.az/sehife ve @seher #gozel mail: ali.veli@gmail.com son",
+   "mask": "000011111111111111111110000111111011111100000001111111111111111110000"
+  },
+  {
+   "text": "www.google.com-a bax",
+   "mask": "11111111111111110000"
+  },
+  {
+   "text": "@şəhər_2026 və #gözəl",
+   "mask": "111111111110000111111"
+  },
+  {
+   "text": "e-poçt: test@mail.az.",
+   "mask": "000000001111111111110"
+  },
+  {
+   "text": "heç nə yoxdur",
+   "mask": "0000000000000"
+  },
+  {
+   "text": "",
+   "mask": ""
+  }
+ ],
+ "apply": [
+  {
+   "src": "sheher",
+   "labels": [
+    1,
+    2,
+    1,
+    0,
+    1,
+    0
+   ],
+   "out": "şəhər"
+  },
+  {
+   "src": "adad ata",
+   "labels": [
+    1,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "out": "ədəd ata"
+  },
+  {
+   "src": "eh",
+   "labels": [
+    0,
+    2
+   ],
+   "out": "eh"
+  },
+  {
+   "src": "SHEHER",
+   "labels": [
+    1,
+    2,
+    1,
+    0,
+    1,
+    0
+   ],
+   "out": "ŞƏHƏR"
+  }
+ ],
+ "allowed": [
+  {
+   "src": "ah",
+   "i": 1,
+   "allowed": [
+    0
+   ]
+  },
+  {
+   "src": "ch",
+   "i": 1,
+   "allowed": [
+    0,
+    2
+   ]
+  },
+  {
+   "src": "ab",
+   "i": 0,
+   "allowed": [
+    0,
+    1
+   ]
+  },
+  {
+   "src": "1b",
+   "i": 0,
+   "allowed": []
+  },
+  {
+   "src": "Sh",
+   "i": 1,
+   "allowed": [
+    0,
+    2
+   ]
+  },
+  {
+   "src": "ha",
+   "i": 0,
+   "allowed": [
+    0
+   ]
+  }
+ ]
+}

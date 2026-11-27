@@ -54,3 +54,22 @@ def test_transformer_export_path_equals_module_path():
         with mock.patch("torch.onnx.is_in_onnx_export", return_value=True):
             got = m(ids, mask)
     torch.testing.assert_close(got[mask], ref[mask], atol=1e-5, rtol=1e-4)
+
+
+def test_export_v2_three_classes(tmp_path):
+    from xettat.export import main
+
+    v = CharVocab()
+    cfg = dict(CFGS["bilstm"], num_classes=3)
+    m = build_model(cfg, v.size).eval()
+    ck = tmp_path / "v2.pt"
+    torch.save({"model": m.state_dict(), "cfg": {"model": cfg, "data": {"max_len": 64, "scheme": "v2"}},
+                "vocab": v.to_json()}, ck)
+    meta = main(["--ckpt", str(ck), "--out", str(tmp_path / "e")])
+    assert meta["scheme"] == "v2" and meta["num_classes"] == 3
+    ids = torch.tensor([v.encode("sheher adad")])
+    mask = torch.ones_like(ids, dtype=torch.bool)
+    with torch.no_grad():
+        ref = m(ids, mask).numpy()
+    got = ort.InferenceSession(str(tmp_path / "e" / "model.onnx")).run(["logits"], {"ids": ids.numpy(), "mask": mask.numpy()})[0]
+    np.testing.assert_allclose(got, ref, atol=1e-4)

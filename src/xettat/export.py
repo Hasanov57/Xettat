@@ -16,7 +16,7 @@ import numpy as np
 import torch
 
 from xettat.restorer import Restorer
-from xettat.text import CANDIDATES, strip
+from xettat.text import CANDIDATES, allowed_actions, strip
 
 SAMPLE = [
     "uzumun suyu uzume sicradi",
@@ -26,10 +26,14 @@ SAMPLE = [
 ]
 
 
-def decisions(logits: np.ndarray, texts: list[str]) -> list[bool]:
+def decisions(logits, texts: list[str]) -> list[int]:
+    """Per-decision outcome: v1 -> convert?(bool) on candidates; v2 -> argmax class where >1 action is legal."""
     out = []
     for row, t in zip(logits, texts):
-        out += [bool(row[i] > 0) for i, c in enumerate(t) if c in CANDIDATES]
+        if row.ndim == 1:
+            out += [int(row[i] > 0) for i, c in enumerate(t) if c in CANDIDATES]
+        else:
+            out += [int(row[i].argmax()) for i in range(len(t)) if len(allowed_actions(t, i)) > 1]
     return out
 
 
@@ -95,6 +99,9 @@ def main(argv: list[str] | None = None) -> dict:
     (out / "vocab.json").write_text(json.dumps(r.vocab.chars, ensure_ascii=False), encoding="utf-8")
     meta = {
         "model_type": kind,
+        "scheme": st["cfg"]["data"].get("scheme", "v1"),
+        "num_classes": st["cfg"]["model"].get("num_classes", 1),
+        "a_bias": st["cfg"].get("infer", {}).get("a_bias", 0.0),
         "max_len": r.max_len,
         "threshold": 0.5,
         "batch_size": 1 if kind == "bilstm" else 32,
