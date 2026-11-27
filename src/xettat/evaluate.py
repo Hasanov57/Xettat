@@ -19,9 +19,10 @@ from xettat.restorer import Restorer
 from xettat.text import strip
 
 
-def load_split(data: Path, split: str, real_path: Path) -> tuple[list[str], list[str]]:
-    if split == "real":
-        rows = [l.split("\t") for l in real_path.read_text(encoding="utf-8").splitlines()[1:] if "\t" in l]
+def load_split(data: Path, split: str, real_path: Path, tsv: str | None = None) -> tuple[list[str], list[str]]:
+    if tsv or split == "real":
+        path = Path(tsv) if tsv else real_path
+        rows = [l.split("\t") for l in path.read_text(encoding="utf-8").splitlines()[1:] if "\t" in l]
         return [r[0] for r in rows], [r[1] for r in rows]
     targets = [l for l in (data / f"{split}.txt").read_text(encoding="utf-8").splitlines() if l.strip()]
     return [strip(t) for t in targets], targets
@@ -36,12 +37,13 @@ def main(argv: list[str] | None = None) -> dict:
     ap.add_argument("--out", required=True)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--latency-n", type=int, default=200)
+    ap.add_argument("--tsv", default=None, help="evaluate an input<TAB>target file (e.g. data/variants/val_digraph.tsv)")
     ap.add_argument("--tag", default="", help="suffix for output files, e.g. the data domain (hplt, subs)")
     args = ap.parse_args(argv)
 
     data, out = Path(args.data), Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    inputs, targets = load_split(data, args.split, Path(args.real))
+    inputs, targets = load_split(data, args.split, Path(args.real), args.tsv)
     r = Restorer.from_checkpoint(args.ckpt, device=args.device)
     preds = r.restore_batch(inputs)
 
