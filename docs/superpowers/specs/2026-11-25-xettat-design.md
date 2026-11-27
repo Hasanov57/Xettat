@@ -170,3 +170,23 @@ Kurs hər modulun sahibini tələb edir: **Data**, **Modelləşdirmə**, **Ekspe
 **Claude-un qərarları (düzəldilə bilər):** tagging formulası; model siyahısı (B0–M3); extension-da lokal (brauzerdə) inference default; Wikipedia + bir böyük web korpus; v1-də `sh/ch/gh` yoxdur; qısayol `Alt+Shift+X`; tracking üçün JSONL + TensorBoard (xarici hesab tələb etmir).
 
 **Builder-ə qalanlar:** dəqiq hiperparametrlər, cümlə bölücü detalları, extension UI-nin vizual detalları, web korpusun konkret seçimi (yükləmə mövcudluğuna görə).
+
+---
+
+## 14. Əlavə (2026-11-27): yazı variantları — "v2 sxemi"
+
+**Niyə:** real istifadəçilər `ş/ç/ğ`-ni `sh/ch/gh`, `ə`-ni bəzən `a` kimi yazır; mətndə ingiliscə sözlər, linklər olur. İstifadəçi təsdiqlədi.
+
+**Tapşırıq:** hər giriş hərfinə 3 sinifdən biri — `0 saxla`, `1 çevir`, `2 sil`.
+- Çevrilən namizədlər: `e i o u c s g a` (+ böyük) → `ə ı ö ü ç ş ğ ə`.
+- Silinə bilən: yalnız `s/c/g`-dən sonra gələn `h/H` (`sh→ş`: `s`=1, `h`=2). Başqa yerdə `h` heç vaxt silinmir.
+- Hər namizəd üçün icazəsiz siniflər inference-də maskalanır → model söz uydura bilməz.
+- **Qorunan hissələr (qayda ilə, model-dən asılı deyil):** URL, e-poçt, `@istifadəçi`, `#heşteq` — heç bir hərfinə toxunulmur. v1 modellərinə də aiddir.
+
+**Data:** hər train cümləsinə təsadüfi üslub: `std` (ə→e, ş→s…), `digraph` (ş→sh, ç→ch, ğ→gh), `a` (ə→a), `mixed` (hərf-hərf təsadüfi); üstəlik qismən düzgün yazma, böyük hərf, ~15% cümləyə tez-tez işlənən ingiliscə söz əlavəsi (etiket: saxla).
+
+**Qiymətləndirmə:** val/test hər üslub üçün ayrıca TSV (`std`, `digraph`, `a`, `mixed`, `english`) + əlavə metrik `a_false_conversion_rate` (düzgün `a`-ların `ə`-yə səhv çevrilmə payı) və `english_corruption_rate`.
+
+**Uyğunluq:** v1 (binar) modellər, extension və sayt dəyişmədən işləyir; v2 modelin `meta.json`-unda `"scheme": "v2"` olur.
+
+**Qeyri-məqsəd (gələcək iş):** ümumi orfoqrafiya/hərf səhvi düzəltməsi (istifadəçi ilə razılaşdırıldı, 2026-11-27).
