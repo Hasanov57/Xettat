@@ -7,6 +7,8 @@ letter, whether to keep it (0) or convert it (1). Everything else never changes.
 
 from __future__ import annotations
 
+import random
+import re
 import unicodedata
 from typing import Sequence
 
@@ -64,3 +66,117 @@ def apply_labels(src: str, labels: Sequence[int]) -> str:
     return "".join(
         TO_AZ[c] if lab == 1 and c in CANDIDATES else c for c, lab in zip(src, labels)
     )
+
+
+# ---------------------------------------------------------------------------------------------
+# v2 scheme: per-character actions KEEP / CONVERT / DELETE (spelling variants: sh/ch/gh, a for ə)
+# ---------------------------------------------------------------------------------------------
+
+KEEP, CONVERT, DELETE = 0, 1, 2
+TO_AZ_EXT: dict[str, str] = {**TO_AZ, "a": "ə", "A": "Ə"}
+DIGRAPH_HEADS = frozenset("sScCgG")
+_DIGRAPH_OF = {"ş": "s", "ç": "c", "ğ": "g"}
+
+# Python's \w is Unicode-aware; the JS twin uses [\p{L}\p{N}_] with the "u" flag.
+_PROTECTED = re.compile(
+    r"(?:https?://|www\.)\S+"            # URLs
+    r"|[\w.+-]+@\w+(?:\.\w+)+"          # e-mails
+    r"|(?<!\w)[@#]\w+"                   # @mentions, #hashtags
+)
+
+
+def protected_mask(text: str) -> list[bool]:
+    """True for characters inside URLs, e-mails, @mentions and #hashtags — never changed."""
+    mask = [False] * len(text)
+    for m in _PROTECTED.finditer(text):
+        for i in range(m.start(), m.end()):
+            mask[i] = True
+    return mask
+
+
+def allowed_actions(src: str, i: int) -> set[int]:
+    c = src[i]
+    if c in TO_AZ_EXT:
+        return {KEEP, CONVERT}
+    if c in "hH":
+        return {KEEP, DELETE} if i > 0 and src[i - 1] in DIGRAPH_HEADS else {KEEP}
+    return set()
+
+
+def apply_actions(src: str, labels: Sequence[int], protected: Sequence[bool] | None = None) -> str:
+    out = []
+    for i, (c, lab) in enumerate(zip(src, labels)):
+        if protected is not None and protected[i]:
+            out.append(c)
+        elif lab == DELETE and c in "hH" and i > 0 and src[i - 1] in DIGRAPH_HEADS:
+            continue
+        elif lab == CONVERT and c in TO_AZ_EXT:
+            out.append(TO_AZ_EXT[c])
+        else:
+            out.append(c)
+    return "".join(out)
+
+
+def _insert_english(target: str, rng: random.Random) -> str:
+    from xettat.english import WORDS
+
+    words = target.split(" ")
+    for _ in range(rng.choice((1, 1, 2))):
+        w = rng.choice(WORDS)
+        if rng.random() < 0.2:
+            w = w.capitalize()
+        words.insert(rng.randrange(len(words) + 1), w)
+    return " ".join(words)
+
+
+def make_variant_pair(
+    target: str,
+    rng: random.Random,
+    style: str | None = None,
+    p_partial: float = 0.3,
+    p_keep: float = 0.3,
+    p_upper: float = 0.05,
+    p_english: float = 0.15,
+    p_digraph: float = 0.8,
+    p_a: float = 0.8,
+    styles: tuple[str, ...] = ("std", "digraph", "a", "mixed"),
+    style_weights: tuple[float, ...] = (0.4, 0.25, 0.15, 0.2),
+) -> tuple[str, list[int], str]:
+    """Return (noisy input, per-input-char labels, target used). apply_actions(input, labels) == target."""
+    target = nfc(target)
+    if rng.random() < p_english:
+        target = _insert_english(target, rng)
+    if rng.random() < p_upper:
+        target = az_upper(target)
+    style = style or rng.choices(styles, style_weights)[0]
+    partial = rng.random() < p_partial
+    inp: list[str] = []
+    labels: list[int] = []
+    for k, t in enumerate(target):
+        if t in AZ_LETTERS:
+            if partial and rng.random() < p_keep:
+                inp.append(t)
+                labels.append(IGNORE)
+                continue
+            low = az_lower(t)
+            base = TO_ASCII[t]
+            if low == "ə" and ((style == "a" and rng.random() < p_a) or (style == "mixed" and rng.random() < 0.3)):
+                base = "A" if t.isupper() else "a"
+            if low in _DIGRAPH_OF and ((style == "digraph" and rng.random() < p_digraph)
+                                       or (style == "mixed" and rng.random() < 0.4)):
+                nxt = target[k + 1] if k + 1 < len(target) else ""
+                h = "H" if t.isupper() and (nxt.isupper() or not nxt.isalpha()) else "h"
+                inp += [base, h]
+                labels += [CONVERT, DELETE]
+                continue
+            inp.append(base)
+            labels.append(CONVERT)
+        else:
+            inp.append(t)
+            if t in TO_AZ_EXT:
+                labels.append(KEEP)
+            elif t in "hH" and inp[-2:-1] and inp[-2] in DIGRAPH_HEADS:
+                labels.append(KEEP)
+            else:
+                labels.append(IGNORE)
+    return "".join(inp), labels, target
