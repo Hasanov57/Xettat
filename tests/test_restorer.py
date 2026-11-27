@@ -65,3 +65,24 @@ def test_evaluate_tag(tiny_ckpt, data_dir, tmp_path):
     out = tmp_path / "run"
     main(["--ckpt", str(tiny_ckpt), "--data", str(data_dir), "--split", "val", "--out", str(out), "--tag", "hplt"])
     assert (out / "final_val_hplt.json").exists() and (out / "errors_val_hplt.jsonl").exists()
+
+
+@pytest.fixture
+def tiny_ckpt_v2(tmp_path):
+    cfg = {"model": {"type": "bilstm", "emb_dim": 16, "hidden": 16, "layers": 1, "dropout": 0.0, "num_classes": 3},
+           "data": {"max_len": 64, "scheme": "v2"}}
+    v = CharVocab()
+    p = tmp_path / "v2.pt"
+    torch.save({"model": build_model(cfg["model"], v.size).state_dict(), "cfg": cfg, "vocab": v.to_json()}, p)
+    return p
+
+
+def test_restorer_v2_invariants(tiny_ckpt_v2):
+    r = Restorer.from_checkpoint(str(tiny_ckpt_v2))
+    for s in ["sheher chay agh", "SHEHER", "ata adad", "bax https://x.az/sehife @seher", "", "eh oh"]:
+        out = r.restore(s)
+        assert len(out) <= len(s)
+    assert r.restore("bax https://x.az/sehife @seher").endswith("https://x.az/sehife @seher")
+    assert r.restore("eh oh") in {"eh oh", "əh oh", "eh öh", "əh öh"}  # h after e/o is never deleted
+    long = "sheher " * 300
+    assert len(r.restore(long)) <= len(long)

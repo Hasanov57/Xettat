@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
+from xettat.models.common import _out
 from xettat.vocab import CharVocab
 
 BYTE_OFFSET = 3  # ByT5: 0 pad, 1 eos, 2 unk, bytes start at 3
@@ -18,8 +19,10 @@ class ByT5Tagger(nn.Module):
     """
 
     def __init__(self, vocab_size: int, name: str = "google/byt5-small", dropout: float = 0.1,
-                 pretrained: bool = True, config: dict | None = None, grad_ckpt: bool = False):
+                 pretrained: bool = True, config: dict | None = None, grad_ckpt: bool = False,
+                 num_classes: int = 1):
         super().__init__()
+        self.num_classes = num_classes
         from transformers import T5Config, T5EncoderModel
 
         if pretrained:
@@ -31,7 +34,7 @@ class ByT5Tagger(nn.Module):
             self.encoder.gradient_checkpointing_enable()
         d = self.encoder.config.d_model
         self.drop = nn.Dropout(dropout)
-        self.head = nn.Linear(d, 1)
+        self.head = nn.Linear(d, num_classes)
 
         vocab = CharVocab()
         assert vocab.size == vocab_size, "ByT5Tagger expects the default CharVocab"
@@ -61,4 +64,4 @@ class ByT5Tagger(nn.Module):
         h = self.encoder(input_ids=byte_ids, attention_mask=attn.long()).last_hidden_state  # [B,L,d]
         idx = offs.clamp(max=L - 1).unsqueeze(-1).expand(-1, -1, h.size(-1))
         g = h.gather(1, idx)                                         # [B,T,d]
-        return self.head(self.drop(g)).squeeze(-1)
+        return _out(self.head(self.drop(g)), self.num_classes)

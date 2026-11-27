@@ -76,3 +76,35 @@ def test_train_and_resume(tmp_path, data_dir):
     lines = [json.loads(l) for l in (run / "metrics.jsonl").read_text().splitlines()]
     new = [l for l in lines[n_before:] if "step" in l]
     assert new and min(l["step"] for l in new) > 30
+
+
+@pytest.mark.parametrize("kind", ["bilstm", "transformer"])
+def test_model_shapes_v2(kind):
+    cfg = dict(TINY[kind], num_classes=3)
+    m = build_model(cfg, CharVocab().size)
+    out = m(torch.randint(2, 50, (2, 17)), torch.ones(2, 17, dtype=torch.bool))
+    assert out.shape == (2, 17, 3)
+
+
+def test_dataset_v2_labels_match_apply(data_dir):
+    from xettat.text import apply_actions
+
+    ds = SentenceDataset(data_dir / "train.txt", CharVocab(), max_len=128, augment=True, seed=0, scheme="v2")
+    for i in range(30):
+        ids, labels = ds[i]
+        assert len(ids) == len(labels)
+        assert set(labels) <= {-100, 0, 1, 2}
+
+
+def test_train_v2_runs(tmp_path, data_dir):
+    import yaml
+
+    from xettat.train import main
+
+    cfg = yaml.safe_load(open("configs/debug_v2.yaml"))
+    cfg["data"]["dir"] = str(data_dir)
+    cfg["ckpt_root"], cfg["runs_root"] = str(tmp_path / "ckpt"), str(tmp_path / "runs")
+    p = tmp_path / "v2.yaml"
+    p.write_text(yaml.safe_dump(cfg))
+    assert main(["--config", str(p), "--run-id", "v2"]) == 0
+    assert (tmp_path / "ckpt" / "v2" / "best.pt").exists()

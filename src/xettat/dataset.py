@@ -9,7 +9,7 @@ import torch
 from torch.utils.data import Dataset
 
 from xettat.data.augment import make_input
-from xettat.text import CANDIDATES, IGNORE, TO_ASCII, make_labels, nfc
+from xettat.text import CANDIDATES, IGNORE, TO_ASCII, make_labels, make_variant_pair, nfc
 from xettat.vocab import CharVocab
 
 
@@ -26,11 +26,12 @@ def labels_for(inp: str, target: str) -> list[int]:
 
 class SentenceDataset(Dataset):
     def __init__(self, path: str | Path, vocab: CharVocab, max_len: int, augment: bool, seed: int = 0,
-                 limit: int | None = None):
+                 limit: int | None = None, scheme: str = "v1"):
         lines = [nfc(l) for l in Path(path).read_text(encoding="utf-8").splitlines() if l.strip()]
         self.sentences = lines[:limit] if limit else lines
         self.vocab, self.max_len, self.augment = vocab, max_len, augment
         self.seed = seed
+        self.scheme = scheme
         self._rng = random.Random(seed)
 
     def __len__(self) -> int:
@@ -41,7 +42,13 @@ class SentenceDataset(Dataset):
         if len(target) > self.max_len:
             start = self._rng.randrange(len(target) - self.max_len + 1) if self.augment else 0
             target = target[start:start + self.max_len]
-        if self.augment:
+        if self.scheme == "v2":
+            if self.augment:
+                inp, labels, _ = make_variant_pair(target, self._rng)
+            else:
+                inp, labels, _ = make_variant_pair(target, self._rng, style="std", p_partial=0, p_upper=0, p_english=0)
+            inp, labels = inp[: self.max_len], labels[: self.max_len]  # digraphs can make input longer
+        elif self.augment:
             inp, target = make_input(target, self._rng)
             labels = labels_for(inp, target)
         else:

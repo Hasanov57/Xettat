@@ -26,7 +26,9 @@ from xettat.dataset import SentenceDataset, collate, worker_init
 from xettat.infer import predict_texts
 from xettat.metrics import score
 from xettat.models import build_model
-from xettat.text import IGNORE, strip
+import random as _random
+
+from xettat.text import IGNORE, make_variant_pair, strip
 from xettat.utils import RunLogger, set_seed
 from xettat.vocab import CharVocab
 
@@ -47,9 +49,14 @@ def lr_lambda(warmup: int, total: int, floor: float = 0.05):
     return f
 
 
-def evaluate_val(model, vocab, targets, device, max_len, batch_size: int = 128) -> dict:
+def evaluate_val(model, vocab, targets, device, max_len, batch_size: int = 128, scheme: str = "v1") -> dict:
     model.eval()
-    inputs = [strip(t) for t in targets]
+    if scheme == "v2":  # fixed mixture of writing styles, same every evaluation
+        rng = _random.Random(0)
+        pairs = [make_variant_pair(t, rng, p_upper=0) for t in targets]
+        inputs, targets = [p[0] for p in pairs], [p[2] for p in pairs]
+    else:
+        inputs = [strip(t) for t in targets]
     preds = predict_texts(model, vocab, inputs, device, max_len, batch_size=batch_size)
     model.train()
     m = score(inputs, preds, targets)
@@ -86,6 +93,10 @@ def main(argv: list[str] | None = None) -> int:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     vocab = CharVocab()
     max_len = dc["max_len"]
+    scheme = dc.get("scheme", "v1")
+    if scheme == "v2":
+        cfg["model"].setdefault("num_classes", 3)
+        assert cfg["model"]["num_classes"] == 3, "scheme v2 needs num_classes: 3"
     model = build_model(cfg["model"], vocab.size).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=tc["lr"], weight_decay=tc.get("weight_decay", 0.01))
     sched = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda(tc.get("warmup_steps", 0), tc["max_steps"]))
@@ -111,7 +122,7 @@ def main(argv: list[str] | None = None) -> int:
     logger.log({"event": "start", "params": n_params, "device": str(device)})
     data_dir = Path(dc["dir"])
     train_ds = SentenceDataset(data_dir / "train.txt", vocab, max_len, augment=dc.get("augment", True),
-                               seed=cfg.get("seed", 42) + step, limit=dc.get("train_limit"))
+                               seed=cfg.get("seed", 42) + step, limit=dc.get("train_limit"), scheme=scheme)
     val_targets = [l for l in (data_dir / "val.txt").read_text(encoding="utf-8").splitlines() if l.strip()]
     val_targets = val_targets[: dc.get("val_subset", 5000)]
     nw = tc.get("num_workers", 4)
@@ -139,7 +150,10 @@ def main(argv: list[str] | None = None) -> int:
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=use_amp):
                 logits = model(ids, mask)
             sel = labels != IGNORE
-            loss = F.binary_cross_entropy_with_logits(logits.float()[sel], labels[sel].float())
+            if logits.dim() == 3:  # v2: keep / convert / delete
+                loss = F.cross_entropy(logits.float()[sel], labels[sel])
+            else:
+                loss = F.binary_cross_entropy_with_logits(logits.float()[sel], labels[sel].float())
             opt.zero_grad(set_to_none=True)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), tc.get("grad_clip", 1.0))
@@ -157,7 +171,7 @@ def main(argv: list[str] | None = None) -> int:
 
             finished = step >= tc["max_steps"]
             if step % tc["eval_every"] == 0 or finished:
-                m = evaluate_val(model, vocab, val_targets, device, max_len, dc.get("eval_batch_size", 128))
+                m = evaluate_val(model, vocab, val_targets, device, max_len, dc.get("eval_batch_size", 128), scheme)
                 if m["val_word_acc"] > best:
                     best, bad_evals = m["val_word_acc"], 0
                     save(ckpt_dir / "best.pt", model=model.state_dict(), cfg=cfg, vocab=vocab.to_json(),

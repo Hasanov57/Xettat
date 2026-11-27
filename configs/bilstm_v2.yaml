@@ -1,0 +1,19 @@
+# v2 scheme (keep/convert/delete): sh/ch/gh and a→ə variants, English insertions. Same BiLSTM as bilstm_mix.
+seed: 42
+ckpt_root: /data/teams/team14/checkpoints
+runs_root: runs
+model: {type: bilstm, emb_dim: 128, hidden: 256, layers: 3, dropout: 0.2, num_classes: 3}
+data: {dir: data/mix, max_len: 512, augment: true, val_subset: 6000, scheme: v2}
+infer: {a_bias: 0.0}
+train:
+  batch_size: 256
+  lr: 0.002
+  weight_decay: 0.01
+  warmup_steps: 1000
+  max_steps: 100000
+  eval_every: 2000
+  ckpt_every: 1000
+  patience: 6
+  grad_clip: 1.0
+  num_workers: 4
+  log_every: 100

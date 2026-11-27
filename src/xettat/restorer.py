@@ -11,8 +11,9 @@ from xettat.vocab import CharVocab
 
 
 class Restorer:
-    def __init__(self, model, vocab: CharVocab, max_len: int, device="cpu"):
+    def __init__(self, model, vocab: CharVocab, max_len: int, device="cpu", a_bias: float = 0.0):
         self.model = model.eval()
+        self.a_bias = a_bias
         self.vocab, self.max_len, self.device = vocab, max_len, torch.device(device)
 
     @classmethod
@@ -28,7 +29,7 @@ class Restorer:
         model.load_state_dict(st["model"])
         model.to(device)
         max_len = min(cfg["data"]["max_len"], cfg["model"].get("max_len", 10**9))
-        return cls(model, vocab, max_len, device)
+        return cls(model, vocab, max_len, device, a_bias=cfg.get("infer", {}).get("a_bias", 0.0))
 
     def restore_batch(self, texts: list[str], threshold: float = 0.5) -> list[str]:
         texts = [nfc(t) for t in texts]
@@ -40,7 +41,7 @@ class Restorer:
                 owners.append(ti)
         nonempty = [i for i, l in enumerate(flat) if l.strip()]
         preds = predict_texts(self.model, self.vocab, [flat[i] for i in nonempty], self.device,
-                              self.max_len, threshold=threshold)
+                              self.max_len, threshold=threshold, a_bias=self.a_bias)
         for i, p in zip(nonempty, preds):
             flat[i] = p
         out = [[] for _ in texts]
