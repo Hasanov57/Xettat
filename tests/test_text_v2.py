@@ -107,14 +107,17 @@ def test_build_english_guard(tmp_path):
 
     root = Path(__file__).resolve().parents[1]
     en = tmp_path / "en.txt"
-    en.write_text("the\nson\ncurve\nmeeting\nbar\nok\nxyzzy\n", encoding="utf-8")
+    en.write_text("the\nson\ncurve\nmeeting\nbar\nok\nxyzzy\ngel\n", encoding="utf-8")
     corpus = tmp_path / "az.txt"
-    corpus.write_text("Mənim oğlum son dəfə bara getdi.\n" * 5 + "Bar və son.\n" * 3, encoding="utf-8")
+    # web text also contains the English words themselves ("meeting", "curve") — they must not count
+    corpus.write_text("Mənim oğlum son dəfə bara getdi, gəl.\n" * 5 + "Bar və son. Sabah meeting var, curve.\n" * 9,
+                      encoding="utf-8")
     out = tmp_path / "guard.txt"
     subprocess.run([sys.executable, str(root / "scripts" / "build_english_guard.py"), "--en", str(en),
                     "--corpus", str(corpus), "--min-az-count", "3", "--out", str(out)], check=True)
     words = set(out.read_text().split())
-    assert {"curve", "meeting"} <= words
-    assert "son" not in words and "bar" not in words  # also Azerbaijani words
+    assert {"curve", "meeting"} <= words  # English words seen as-is in Azerbaijani web text still protected
+    assert "gel" not in words  # = gəl without diacritics: protecting it would block restoring gəl
+    assert {"son", "bar"} <= words  # harmless: their correct Azerbaijani form has no diacritics anyway
     assert "ok" not in words  # shorter than 3 letters: too risky (Azerbaijani short words)
     assert "xyzzy" not in words  # no candidate letter -> nothing to protect
