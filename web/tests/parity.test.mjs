@@ -33,3 +33,10 @@ test("v2 logits: masked argmax restores digraphs and a", async () => {
   assert.equal(await restoreWithLogits("sheher eh", logitsFn, 64, { numClasses: 3 }), "şəhər əh");
   assert.equal(await restoreWithLogits("adad @seher", logitsFn, 64, { numClasses: 3 }), "ədəd @seher");
 });
+
+test("English guard identical to Python", () => {
+  const guard = new Set(fx.guard.words);
+  for (const { text, mask } of fx.guard.cases) {
+    assert.equal(protectedMask(Array.from(text), guard).map((b) => (b ? "1" : "0")).join(""), mask, text);
+  }
+});

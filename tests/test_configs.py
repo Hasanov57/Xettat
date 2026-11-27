@@ -38,3 +38,9 @@ def test_report_table(tmp_path):
     md = out.read_text()
     assert "wordfreq" in md and "bilstm_v1" in md and "0.9500" in md
     assert md.index("wordfreq") < md.index("bilstm_v1")  # sorted by word_acc ascending
+
+
+def test_english_guard_copies_in_sync():
+    a = (ROOT / "src" / "xettat" / "english_guard.txt").read_text()
+    for other in ("web/shared/english-guard.txt", "extension/shared/english-guard.txt"):
+        assert (ROOT / other).read_text() == a, other

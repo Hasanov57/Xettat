@@ -1,0 +1,3 @@
+google-20k.txt: https://github.com/first20hours/google-10000-english (20k.txt)
+Derived from the Google Web Trillion Word Corpus (Brants & Franz, LDC2006T13) via Peter Norvig; cleanup by Josh Kaufman.
+Educational and research use permitted (LDC license, MIT for Norvig contributions). Not for commercial use without an LDC license.

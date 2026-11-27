@@ -85,12 +85,34 @@ _PROTECTED = re.compile(
 )
 
 
-def protected_mask(text: str) -> list[bool]:
-    """True for characters inside URLs, e-mails, @mentions and #hashtags — never changed."""
+_WORD = re.compile(r"[^\W\d_]+")  # letters only (mirrors JS \p{L}+)
+_GUARD: frozenset[str] | None = None
+
+
+def english_guard() -> frozenset[str]:
+    """English words that are never Azerbaijani words (built by scripts/build_english_guard.py)."""
+    global _GUARD
+    if _GUARD is None:
+        from pathlib import Path
+
+        p = Path(__file__).with_name("english_guard.txt")
+        _GUARD = frozenset(p.read_text(encoding="utf-8").split()) if p.exists() else frozenset()
+    return _GUARD
+
+
+def protected_mask(text: str, english: frozenset[str] | set[str] | None = None) -> list[bool]:
+    """True for characters that are never changed: URLs, e-mails, @mentions, #hashtags and whole words
+    found in the English guard (case-insensitive)."""
     mask = [False] * len(text)
     for m in _PROTECTED.finditer(text):
         for i in range(m.start(), m.end()):
             mask[i] = True
+    guard = english_guard() if english is None else english
+    if guard:
+        for m in _WORD.finditer(text):
+            if m.group().lower() in guard:
+                for i in range(m.start(), m.end()):
+                    mask[i] = True
     return mask
 
 

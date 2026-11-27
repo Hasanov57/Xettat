@@ -117,5 +117,30 @@
     0
    ]
   }
- ]
+ ],
+ "guard": {
+  "words": [
+   "curve",
+   "meeting",
+   "deadline"
+  ],
+  "cases": [
+   {
+    "text": "qrafikde Curve yarandi, curved deyil, curve-in",
+    "mask": "0000000001111100000000000000000000000011111000"
+   },
+   {
+    "text": "MEETING sabah",
+    "mask": "1111111000000"
+   },
+   {
+    "text": "deadline@x.az ve deadline",
+    "mask": "1111111111111000011111111"
+   },
+   {
+    "text": "heç nə",
+    "mask": "000000"
+   }
+  ]
+ }
 }

@@ -86,3 +86,35 @@ def test_english_insertion_is_kept():
         if len(tgt.split()) > 4:
             seen = True
     assert seen
+
+
+def test_english_guard_protects_whole_words_case_insensitive():
+    t = "qrafikde Curve yarandi, curved deyil, curve-in"
+    m = protected_mask(t, english={"curve"})
+    i = t.index("Curve")
+    assert all(m[i:i + 5])
+    j = t.index("curved")
+    assert not any(m[j:j + 6])  # only whole words
+    k = t.index("curve-in")
+    assert all(m[k:k + 5]) and not m[k + 6]
+    assert not m[t.index("qrafikde")]
+
+
+def test_build_english_guard(tmp_path):
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    en = tmp_path / "en.txt"
+    en.write_text("the\nson\ncurve\nmeeting\nbar\nok\nxyzzy\n", encoding="utf-8")
+    corpus = tmp_path / "az.txt"
+    corpus.write_text("Mənim oğlum son dəfə bara getdi.\n" * 5 + "Bar və son.\n" * 3, encoding="utf-8")
+    out = tmp_path / "guard.txt"
+    subprocess.run([sys.executable, str(root / "scripts" / "build_english_guard.py"), "--en", str(en),
+                    "--corpus", str(corpus), "--min-az-count", "3", "--out", str(out)], check=True)
+    words = set(out.read_text().split())
+    assert {"curve", "meeting"} <= words
+    assert "son" not in words and "bar" not in words  # also Azerbaijani words
+    assert "ok" not in words  # shorter than 3 letters: too risky (Azerbaijani short words)
+    assert "xyzzy" not in words  # no candidate letter -> nothing to protect

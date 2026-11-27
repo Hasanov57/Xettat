@@ -7,6 +7,11 @@ README-team14.md
 # --- data & models (large) ---
 data/raw/
 data/processed/
+data/hplt/
+data/subs/
+data/mix/
+data/variants/
+.cache/
 checkpoints/
 *.pt
 *.onnx

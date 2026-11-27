@@ -40,8 +40,13 @@ export function windows(n, maxLen, overlap) {
   }
 }
 
-/** @param {string[]} chars code points of one line */
-export function protectedMask(chars) {
+const LETTERS = /\p{L}+/gu; // whole words for the English guard (mirrors text.py _WORD)
+
+/**
+ * @param {string[]} chars code points of one line
+ * @param {Set<string>} [english] English-only words (lower case) that must never change
+ */
+export function protectedMask(chars, english = null) {
   const text = chars.join("");
   const mask = new Array(chars.length).fill(false);
   // map UTF-16 offsets (regex) to code-point indices
@@ -50,6 +55,12 @@ export function protectedMask(chars) {
   cpIndex.push(chars.length);
   for (const m of text.matchAll(PROTECTED)) {
     for (let u = m.index; u < m.index + m[0].length; u++) mask[cpIndex[u]] = true;
+  }
+  if (english?.size) {
+    for (const m of text.matchAll(LETTERS)) {
+      if (!english.has(m[0].toLowerCase())) continue;
+      for (let u = m.index; u < m.index + m[0].length; u++) mask[cpIndex[u]] = true;
+    }
   }
   return mask;
 }
@@ -100,7 +111,7 @@ function actionsV2(chars, offset, logits, L, aBias) {
  *        probabilities) or raw logits flattened [L*3] (numClasses=3)
  */
 export async function restoreWithLogits(text, scoresFn, maxLen,
-  { numClasses = 1, threshold = 0.5, overlap = 64, aBias = 0 } = {}) {
+  { numClasses = 1, threshold = 0.5, overlap = 64, aBias = 0, english = null } = {}) {
   const lines = text.normalize("NFC").split("\n");
   const lineChars = lines.map((l) => Array.from(l));
   const pieces = []; // [lineIdx, start, end]
@@ -122,7 +133,7 @@ export async function restoreWithLogits(text, scoresFn, maxLen,
       if (m > margin[li][s + i]) { margin[li][s + i] = m; actions[li][s + i] = acts[i]; }
     }
   });
-  return lineChars.map((chars, li) => applyActions(chars, actions[li], protectedMask(chars))).join("\n");
+  return lineChars.map((chars, li) => applyActions(chars, actions[li], protectedMask(chars, english))).join("\n");
 }
 
 /** v1 convenience wrapper: probsFn returns P(convert) per character. */

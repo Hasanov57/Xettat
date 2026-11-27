@@ -10,6 +10,11 @@ export async function createRestorer({ ort, baseUrl = "model/", modelFile = "mod
     fetch(baseUrl + "meta.json").then((r) => r.json()),
   ]);
   const vocab = makeVocab(vocabChars);
+  // English-only words that are never restored (curve, meeting, ...); optional file next to this module
+  const english = await fetch(new URL("./english-guard.txt", import.meta.url))
+    .then((r) => (r.ok ? r.text() : ""))
+    .then((t) => new Set(t.split(/\s+/).filter(Boolean)))
+    .catch(() => new Set());
   batchSize = meta.batch_size ?? batchSize; // BiLSTM exports run unpadded, one line per call
   const C = meta.num_classes ?? 1; // 1 = v1 (binary), 3 = v2 (keep/convert/delete)
   const session = await ort.InferenceSession.create(baseUrl + (meta.default_file ?? modelFile), {
@@ -49,6 +54,6 @@ export async function createRestorer({ ort, baseUrl = "model/", modelFile = "mod
   return {
     meta,
     restore: (text) => restoreWithLogits(text, probsFn, meta.max_len ?? 512,
-      { numClasses: C, threshold: meta.threshold ?? 0.5, aBias: meta.a_bias ?? 0 }),
+      { numClasses: C, threshold: meta.threshold ?? 0.5, aBias: meta.a_bias ?? 0, english }),
   };
 }

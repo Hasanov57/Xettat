@@ -31,7 +31,7 @@ test("every local script/link in extension html exists", () => {
 });
 
 test("shared core copy is in sync with web/shared", () => {
-  for (const f of ["xettat-core.js", "xettat-ort.js"]) {
+  for (const f of ["xettat-core.js", "xettat-ort.js", "english-guard.txt"]) {
     const a = readFileSync(join(EXT, "shared", f), "utf8");
     const b = readFileSync(new URL(`../shared/${f}`, import.meta.url), "utf8");
     assert.equal(a, b, `${f} out of sync: run python scripts/pack_extension.py`);
